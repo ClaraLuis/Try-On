@@ -2,17 +2,23 @@ import React, { useRef, useState, useEffect } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as handpose from "@tensorflow-models/handpose";
 import Webcam from "react-webcam";
+import { CircularProgress } from "react-cssfx-loading";
 
 function Bracelet(props) {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
+  const imgRef = useRef(new Image());
+  const [isLoading, setIsLoading] = useState(false);
 
   const runHandpose = async () => {
+    setIsLoading(true);
     const net = await handpose.load();
     console.log("Handpose model loaded.");
+    setIsLoading(false);
+
     setInterval(() => {
       detect(net);
-    }, 10);
+    }, 100);
   };
 
   const detect = async (net) => {
@@ -55,21 +61,20 @@ function Bracelet(props) {
           handSide === "left" ? x - braceletSize * 0.6 : x - braceletSize * 0.6;
         const adjustedY = y - braceletSize * 0.5;
 
-        const img = new Image();
-        img.src = props?.selectedImg;
-
-        img.onerror = (error) => {
-          console.error("Error loading image:", error);
-        };
-
-        if (img) {
+        if (imgRef.current) {
           ctx.save();
           if (handSide === "right") {
             // ctx.scale(-1, 1);
             // ctx.translate(-canvasRef.current.width, 0);
           }
 
-          ctx.drawImage(img, adjustedX, adjustedY, braceletSize, braceletSize);
+          ctx.drawImage(
+            imgRef.current,
+            adjustedX,
+            adjustedY,
+            braceletSize,
+            braceletSize
+          );
           ctx.restore();
         }
       }
@@ -80,25 +85,45 @@ function Bracelet(props) {
     runHandpose();
   }, []);
 
-  return (
-    <div style={{ position: "absolute" }}>
-      <Webcam audio={false} ref={webcamRef} style={{ position: "relative" }} />
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: "absolute",
-          marginLeft: "auto",
-          marginRight: "auto",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          zindex: 9,
-          width: "100%",
-          height: "100%",
-        }}
-      />
-    </div>
-  );
+  useEffect(() => {
+    imgRef.current.src = props?.selectedImg;
+  }, [props?.selectedImg]);
+  if (isLoading) {
+    return (
+      <div class="col-lg-12 allcentered" style={{ height: "40vh" }}>
+        <CircularProgress
+          color="#000"
+          width="100px"
+          height="100px"
+          duration="1s"
+        />
+      </div>
+    );
+  } else {
+    return (
+      <div style={{ position: "absolute" }}>
+        <Webcam
+          audio={false}
+          ref={webcamRef}
+          style={{ position: "relative" }}
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            marginLeft: "auto",
+            marginRight: "auto",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            zindex: 9,
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </div>
+    );
+  }
 }
 
 export default Bracelet;

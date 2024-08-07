@@ -2,16 +2,20 @@ import React, { useRef, useState, useEffect } from "react";
 import * as tf from "@tensorflow/tfjs";
 import * as handpose from "@tensorflow-models/handpose";
 import Webcam from "react-webcam";
-// import bracelet from "./bracelet.png";
+import { CircularProgress } from "react-cssfx-loading";
 
 function Ring(props) {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
-  // const [braceletImage, setBraceletImage] = useState(null);
+  const imgRef = useRef(new Image());
+  const [isLoading, setIsLoading] = useState(false);
 
   const runHandpose = async () => {
+    setIsLoading(true);
     const net = await handpose.load();
     console.log("Handpose model loaded.");
+    setIsLoading(false);
+
     setInterval(() => {
       detect(net);
     }, 100);
@@ -37,7 +41,7 @@ function Ring(props) {
       ctx.clearRect(0, 0, videoWidth, videoHeight);
 
       if (hand.length > 0) {
-        // Detect landmarks for the ring finger (index 16 is the 4th finger tip)
+        // Detect landmarks for the ring finger (index 17 is the 4th finger tip)
         const landmarks = hand[0].landmarks;
         const ringFingerTip = landmarks[17];
 
@@ -57,19 +61,7 @@ function Ring(props) {
           handSide === "left" ? x - braceletSize * 0.1 : x - braceletSize * 0.9;
         const adjustedY = y - braceletSize * 1.5;
 
-        const img = new Image();
-        img.src = props?.selectedImg;
-
-        // Handle image load success
-        // img.onload = () => setBraceletImage(img);
-
-        // Handle image load error
-        img.onerror = (error) => {
-          console.error("Error loading image:", error);
-          // setBraceletImage(null);
-        };
-
-        if (img) {
+        if (imgRef.current) {
           ctx.save();
           var flipAdjustedX = adjustedX;
           if (handSide === "right") {
@@ -80,7 +72,7 @@ function Ring(props) {
             flipAdjustedX = -(adjustedX + braceletSize);
           }
           ctx.drawImage(
-            img,
+            imgRef.current,
             flipAdjustedX,
             adjustedY,
             braceletSize,
@@ -94,29 +86,47 @@ function Ring(props) {
 
   useEffect(() => {
     runHandpose();
-
-    // Load the bracelet image
   }, []);
 
-  return (
-    <div style={{ position: "absolute" }}>
-      <Webcam audio={false} ref={webcamRef} style={{ position: "relative" }} />
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: "absolute",
-          marginLeft: "auto",
-          marginRight: "auto",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          zindex: 9,
-          width: "100%",
-          height: "100%",
-        }}
-      />
-    </div>
-  );
+  useEffect(() => {
+    imgRef.current.src = props?.selectedImg;
+  }, [props?.selectedImg]);
+  if (isLoading) {
+    return (
+      <div class="col-lg-12 allcentered" style={{ height: "40vh" }}>
+        <CircularProgress
+          color="#000"
+          width="100px"
+          height="100px"
+          duration="1s"
+        />
+      </div>
+    );
+  } else {
+    return (
+      <div style={{ position: "absolute" }}>
+        <Webcam
+          audio={false}
+          ref={webcamRef}
+          style={{ position: "relative" }}
+        />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            marginLeft: "auto",
+            marginRight: "auto",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            zindex: 9,
+            width: "100%",
+            height: "100%",
+          }}
+        />
+      </div>
+    );
+  }
 }
 
 export default Ring;
