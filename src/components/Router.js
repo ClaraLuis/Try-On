@@ -82,7 +82,7 @@ function Router() {
                         selectedImg={imagebaselink + selectedImg?.path}
                       />
                     )}
-                    {selectedImg?.tryon_place == "Earings" && (
+                    {selectedImg?.tryon_place == "Earrings" && (
                       <WebcamWithEarrings
                         selectedImg={imagebaselink + selectedImg?.path}
                       />
